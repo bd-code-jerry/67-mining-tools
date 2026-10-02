@@ -1,8 +1,9 @@
 .auth-page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1.05fr .95fr;
-  background: #f5f8fc;
+  background: var(--page-bg);
 }
 .auth-brand-panel {
   background: linear-gradient(145deg, #11263d, #173c66);

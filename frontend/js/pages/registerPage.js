@@ -1,4 +1,5 @@
 import { api } from "../api/client.js";
+import { themeToggleHtml } from "../components/themeToggle.js";
 
 export async function renderRegisterPage(container, { onSignedIn }) {
   let registrationCodeRequired = false;
@@ -11,8 +12,9 @@ export async function renderRegisterPage(container, { onSignedIn }) {
 
   container.innerHTML = `
     <div class="auth-page">
+      ${themeToggleHtml("theme-toggle-auth")}
       <section class="auth-brand-panel">
-        <div class="auth-brand">RSG</div>
+        <div class="auth-brand">BD</div>
         <div class="auth-brand-copy">
           <h1>Create a team account</h1>
           <p>Each team member gets a separate login while sharing the same balance history database.</p>
@@ -22,7 +24,7 @@ export async function renderRegisterPage(container, { onSignedIn }) {
       <section class="auth-form-wrap">
         <div class="auth-card card">
           <h2>Register</h2>
-          <p class="intro">Create your RSG dashboard account.</p>
+          <p class="intro">Create your BD dashboard account.</p>
           <form class="auth-form" data-register-form>
             <div class="field">
               <label for="username">Username</label>

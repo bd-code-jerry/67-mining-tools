@@ -1,4 +1,5 @@
 import os
+from ipaddress import ip_address
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -20,19 +21,54 @@ def _load_env_file(path: Path) -> None:
 
 _load_env_file(PROJECT_ROOT / ".env")
 
-APP_HOST = os.getenv("RSG_HOST", "0.0.0.0")
-APP_PORT = int(os.getenv("RSG_PORT", "8765"))
-REGISTRATION_CODE = os.getenv("RSG_REGISTRATION_CODE", "").strip()
-SESSION_DAYS = max(1, int(os.getenv("RSG_SESSION_DAYS", "14")))
-COOKIE_SECURE = os.getenv("RSG_COOKIE_SECURE", "false").strip().lower() in {
+def _setting(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return default if value is None else value
+
+
+def _database_setting(project_root: Path, bd_value: str | None) -> str:
+    if bd_value is not None:
+        return bd_value
+
+    new_default = "data/bd_dashboard.db"
+    return new_default
+
+
+APP_HOST = _setting("BD_HOST", "127.0.0.1")
+APP_PORT = int(_setting("BD_PORT", "8765"))
+REGISTRATION_CODE = _setting("BD_REGISTRATION_CODE", "").strip()
+SESSION_DAYS = max(1, int(_setting("BD_SESSION_DAYS", "14")))
+COOKIE_SECURE = _setting("BD_COOKIE_SECURE", "false").strip().lower() in {
     "1",
     "true",
     "yes",
     "on",
 }
-SESSION_COOKIE_NAME = "rsg_session"
+SESSION_COOKIE_NAME = "bd_session"
 
-_db_value = os.getenv("RSG_DATABASE_PATH", "data/rsg_dashboard.db")
+
+def validate_host_registration(host: str, registration_code: str) -> None:
+    normalized_host = host.strip().lower()
+    if normalized_host == "localhost":
+        return
+
+    try:
+        is_loopback = ip_address(normalized_host).is_loopback
+    except ValueError:
+        is_loopback = False
+
+    if not is_loopback and not registration_code.strip():
+        raise RuntimeError(
+            "Set BD_REGISTRATION_CODE before binding BD_HOST to a non-local interface."
+        )
+
+
+validate_host_registration(APP_HOST, REGISTRATION_CODE)
+
+_db_value = _database_setting(
+    PROJECT_ROOT,
+    os.getenv("BD_DATABASE_PATH"),
+)
 _db_path = Path(_db_value)
 if not _db_path.is_absolute():
     _db_path = PROJECT_ROOT / _db_path

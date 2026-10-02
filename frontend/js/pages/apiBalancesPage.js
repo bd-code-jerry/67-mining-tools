@@ -884,6 +884,7 @@ export async function renderApiBalancesPage(container, { onUnauthorized }) {
         errorEl.textContent = "";
         try {
           await api.createHistory({
+            expected_latest_entry_id: overview.latest?.id ?? null,
             entry_date: newEntryDate,
             values: draftPayload(newDraft),
           });

@@ -1,10 +1,12 @@
 import { api } from "../api/client.js";
+import { themeToggleHtml } from "../components/themeToggle.js";
 
 export function renderLoginPage(container, { onSignedIn }) {
   container.innerHTML = `
     <div class="auth-page">
+      ${themeToggleHtml("theme-toggle-auth")}
       <section class="auth-brand-panel">
-        <div class="auth-brand">RSG</div>
+        <div class="auth-brand">BD</div>
         <div class="auth-brand-copy">
           <h1>Team balance dashboard</h1>
           <p>Track API balances, usage history, and corrections from one shared dashboard.</p>
@@ -14,7 +16,7 @@ export function renderLoginPage(container, { onSignedIn }) {
       <section class="auth-form-wrap">
         <div class="auth-card card">
           <h2>Sign in</h2>
-          <p class="intro">Use your RSG team account.</p>
+          <p class="intro">Use your BD team account.</p>
           <form class="auth-form" data-login-form>
             <div class="field">
               <label for="username">Username</label>

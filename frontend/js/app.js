@@ -5,9 +5,13 @@ import { renderApiBalancesPage } from "./pages/apiBalancesPage.js";
 import { renderDashboardPage } from "./pages/dashboardPage.js";
 import { renderLoginPage } from "./pages/loginPage.js";
 import { renderRegisterPage } from "./pages/registerPage.js";
+import { bindThemeToggleEvents, initializeTheme, syncThemeButtons } from "./theme.js";
 
 const app = document.getElementById("app");
 const state = { user: null, bootstrapped: false };
+
+initializeTheme();
+bindThemeToggleEvents();
 
 function routeName() {
   const hash = window.location.hash || "#/dashboard";
@@ -42,6 +46,7 @@ function protectedShell(activeRoute) {
       <main class="main" id="page-root"></main>
     </div>
   `;
+  syncThemeButtons(app);
 
   app.querySelector("[data-logout]")?.addEventListener("click", async () => {
     try { await api.logout(); } catch (_) {}
@@ -64,6 +69,7 @@ async function renderRoute() {
         go("dashboard");
       },
     });
+    syncThemeButtons(app);
     return;
   }
 
@@ -75,6 +81,7 @@ async function renderRoute() {
         go("dashboard");
       },
     });
+    syncThemeButtons(app);
     return;
   }
 

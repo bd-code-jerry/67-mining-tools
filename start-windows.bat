@@ -14,7 +14,7 @@ if not exist "%VENV_PY%" (
   exit /b 1
 )
 
-echo Starting RSG Dashboard...
+echo Starting BD Dashboard...
 echo Open http://127.0.0.1:8765 in your browser.
 echo Press Ctrl+C in this window to stop the server.
 echo.

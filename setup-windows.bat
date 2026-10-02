@@ -3,7 +3,7 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 
 REM ------------------------------------------------------------
-REM RSG Dashboard - Windows setup
+REM BD Dashboard - Windows setup
 REM This script intentionally uses the venv Python directly.
 REM It does NOT depend on activate.bat.
 REM ------------------------------------------------------------
@@ -98,7 +98,9 @@ if not exist ".env" (
 echo.
 echo Setup complete.
 echo Virtual environment: %CD%\.venv
-echo Next: edit .env if you want a team registration code, then run start-windows.bat
+echo Local use: keep the default BD_HOST and blank registration code.
+echo LAN use: set BD_HOST=0.0.0.0 and a private BD_REGISTRATION_CODE in .env.
+echo Next: run start-windows.bat
 echo.
 pause
 exit /b 0

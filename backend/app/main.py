@@ -9,7 +9,7 @@ from .routers.balances import router as balances_router
 from .routers.usage import router as usage_router
 from .services.seed_service import seed_defaults
 
-app = FastAPI(title="RSG API Key Balances", version="1.2.0")
+app = FastAPI(title="BD API Key Balances", version="1.2.0")
 
 
 @app.on_event("startup")

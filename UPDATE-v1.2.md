@@ -1,4 +1,4 @@
-# RSG API Balances v1.2
+# BD API Balances v1.2
 
 ## Added: total used balance by API key
 

@@ -1,9 +1,11 @@
 import { escapeHtml } from "../utils/format.js";
+import { themeToggleHtml } from "./themeToggle.js";
 
 export function sidebarHtml(activeRoute, user) {
   return `
     <aside class="sidebar">
-      <div class="brand">RSG</div>
+      <div class="brand">BD</div>
+      ${themeToggleHtml("theme-toggle-sidebar")}
       <nav class="nav">
         <a class="nav-link ${activeRoute === "dashboard" ? "active" : ""}" href="#/dashboard">
           <span class="nav-icon">⌂</span><span>Dashboard</span>

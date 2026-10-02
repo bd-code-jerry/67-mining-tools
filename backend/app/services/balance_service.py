@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from math import ceil, isclose
+from math import ceil, isclose, isfinite
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -142,14 +142,19 @@ def _as_number(value, field_name: str) -> float | None:
         return None
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except (OverflowError, TypeError, ValueError):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"{field_name} must be a number.",
+        )
+    if not isfinite(number):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{field_name} must be a finite number.",
         )
     if number < -EPSILON:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"{field_name} cannot be negative.",
         )
     return max(0.0, number)
@@ -173,6 +178,12 @@ def _calculate_value(
         else:
             total_n = float(default_total)
 
+    if not isfinite(total_n):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{provider_name}: Total must be a finite number.",
+        )
+
     if used_n is None and left_n is None:
         # Saving a new snapshot without typing values keeps the last balance and
         # records zero new usage for this entry.
@@ -184,7 +195,7 @@ def _calculate_value(
         left_n = total_n - used_n
     elif not isclose(used_n + left_n, total_n, abs_tol=1e-8):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=(
                 f"{provider_name}: Used + Left must equal Total. "
                 "Edit either Used or Left so the values match."
@@ -193,8 +204,14 @@ def _calculate_value(
 
     if used_n < -EPSILON or left_n < -EPSILON:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"{provider_name}: Used or Left cannot be greater than Total.",
+        )
+
+    if not all(isfinite(value) for value in (total_n, used_n, left_n)):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{provider_name}: Balances must be finite numbers.",
         )
 
     # Keep substantially more precision than the UI needs. The frontend also
@@ -207,8 +224,16 @@ def _calculate_value(
 
 
 def create_history_entry(conn, user_id: int, payload: dict[str, Any]) -> dict[str, Any]:
+    conn.execute("BEGIN IMMEDIATE")
     providers = _providers(conn)
     latest = latest_entry(conn)
+    expected_latest_entry_id = payload.get("expected_latest_entry_id")
+    latest_entry_id = latest["id"] if latest else None
+    if expected_latest_entry_id != latest_entry_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Balances changed since this form was opened. Refresh and try again.",
+        )
     latest_map = {
         value["provider_key"]: value for value in (latest["values"] if latest else [])
     }
@@ -262,6 +287,9 @@ def create_add_balance_entry(
     Added balance is not counted as usage: used=0 and left=new total.
     """
 
+    # Lock before reading the latest snapshot. SQLite serializes writers, so a
+    # second top-up waits here and then adds to the first one's committed value.
+    conn.execute("BEGIN IMMEDIATE")
     providers = _providers(conn)
     latest = latest_entry(conn)
     latest_map = {
@@ -282,7 +310,7 @@ def create_add_balance_entry(
 
     if not any_positive:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail="Enter an amount greater than 0 for at least one API key.",
         )
 
@@ -300,6 +328,11 @@ def create_add_balance_entry(
         key = provider["provider_key"]
         previous_left = float(latest_map.get(key, {}).get("left_balance", 0.0))
         new_total = round(previous_left + normalized_additions[key], 12)
+        if not isfinite(new_total):
+            raise HTTPException(
+                status_code=422,
+                detail=f"{provider['display_name']}: Added balance exceeds the supported range.",
+            )
         conn.execute(
             """
             INSERT INTO history_values(entry_id, provider_id, total_balance, used_balance, left_balance)

@@ -3,8 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="light" />
-  <title>RSG Dashboard</title>
+  <meta name="color-scheme" content="light dark" />
+  <title>BD Dashboard</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("bd-dashboard-theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (_) {
+      // Use the default light theme when browser storage is unavailable.
+    }
+  </script>
   <link rel="stylesheet" href="/static/styles/base.css" />
   <link rel="stylesheet" href="/static/styles/layout.css" />
   <link rel="stylesheet" href="/static/styles/auth.css" />

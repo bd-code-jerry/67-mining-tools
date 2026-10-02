@@ -29,6 +29,10 @@ class HistoryBody(BaseModel):
     values: dict[str, ProviderValue] = Field(default_factory=dict)
 
 
+class CreateHistoryBody(HistoryBody):
+    expected_latest_entry_id: int | None
+
+
 class AddBalanceBody(BaseModel):
     entry_date: date | None = None
     additions: dict[str, float] = Field(default_factory=dict)
@@ -53,7 +57,7 @@ def get_entry(entry_id: int, user: dict = Depends(get_current_user)):
 
 
 @router.post("/history")
-def create_entry(body: HistoryBody, user: dict = Depends(get_current_user)):
+def create_entry(body: CreateHistoryBody, user: dict = Depends(get_current_user)):
     payload: dict[str, Any] = body.model_dump(mode="json")
     with db_connection() as conn:
         entry = create_history_entry(conn, user["id"], payload)

@@ -1,4 +1,4 @@
-# RSG API Key Balances Dashboard
+# BD API Key Balances Dashboard
 
 A small team dashboard for manually tracking API-provider balances and usage.
 
@@ -9,6 +9,8 @@ The current build intentionally contains only:
 - **Login / Register** — separate team accounts stored in the same local SQLite database.
 
 The code is split into small frontend pages/components and backend routers/services so you can add more pages later without rebuilding the whole project.
+
+A fresh install starts with the provider catalog and no balance history. Add your own balances after creating an account. Existing database files keep their current history.
 
 ## Main behavior
 
@@ -31,6 +33,8 @@ Total = Used + Left
 ```
 
 If you click **Save to History** without changing any values, the latest remaining balances are saved again with `0` new usage.
+
+The form checks whether the latest balance changed after it was opened. If another teammate saved first, this entry is rejected so the old form cannot overwrite newer balances.
 
 ### Add Balance
 
@@ -71,10 +75,14 @@ Preset ranges end on the latest saved history date rather than the computer cloc
 
 Each API key keeps its own unit. USD, credits, and Chutes `t` are shown separately instead of being added together into a meaningless mixed-unit total.
 
+### Light and dark appearance
+
+Use the **Light mode / Dark mode** button on the sign-in and registration pages or in the sidebar after signing in. Your choice is saved in the current browser and is used the next time you open the dashboard.
+
 ## Folder structure
 
 ```text
-rsg-api-balances/
+bd-api-balances/
 │
 ├── backend/
 │   └── app/
@@ -90,7 +98,7 @@ rsg-api-balances/
 │       └── services/
 │           ├── balance_service.py     # balance calculations + history logic
 │           ├── usage_service.py       # totals by API key/date range
-│           └── seed_service.py        # API providers + your Sep 18–25 data
+│           └── seed_service.py        # initial API provider catalog
 │
 ├── frontend/
 │   ├── index.html
@@ -101,9 +109,11 @@ rsg-api-balances/
 │   │   └── balances.css               # API balance page styling
 │   └── js/
 │       ├── app.js                     # frontend router
+│       ├── theme.js                   # theme preference and switching
 │       ├── api/client.js              # calls backend APIs
 │       ├── components/
 │       │   ├── sidebar.js
+│       │   ├── themeToggle.js
 │       │   ├── modal.js
 │       │   ├── toast.js
 │       │   └── usageRangeSummary.js   # 1 day/week/month/custom usage UI
@@ -117,9 +127,12 @@ rsg-api-balances/
 │       └── utils/format.js
 │
 ├── data/
-│   └── rsg_dashboard.db               # created automatically on first run
+│   └── bd_dashboard.db               # created automatically on first run
 │
-├── docs/reference-ui.png              # UI image you selected
+├── tests/
+│   ├── test_balance_integrity.py      # balance and startup regressions
+│   ├── test_theme_state.mjs           # theme persistence and control state
+│   └── test_theme_ui.mjs              # theme controls on app screens
 ├── .env.example
 ├── requirements.txt
 ├── run.py
@@ -136,7 +149,7 @@ rsg-api-balances/
 For example:
 
 ```text
-D:\Projects\rsg-api-balances
+D:\Projects\bd-api-balances
 ```
 
 ### 2. Run setup once
@@ -151,17 +164,21 @@ It creates `.venv`, installs FastAPI/Uvicorn **inside that virtual environment**
 
 If an earlier setup attempt left an incomplete `.venv`, run `setup-windows.bat` again. The corrected script removes the incomplete environment and rebuilds it.
 
-### 3. Optional: protect registration with a team code
+### 3. Set a team registration code for network access
 
 Open `.env` and set:
 
 ```text
-RSG_REGISTRATION_CODE=your-private-team-code
+BD_REGISTRATION_CODE=a-long-private-team-code
 ```
 
-Then only teammates who know that code can register.
+For local-only use, the code can remain blank. For LAN access, also set:
 
-If this is blank, anyone who can reach the dashboard can create an account.
+```text
+BD_HOST=0.0.0.0
+```
+
+The server refuses to start on a non-local interface without a registration code. Only teammates who know that code can register.
 
 ### 4. Start the dashboard
 
@@ -181,13 +198,9 @@ Register your first account, then sign in.
 
 ## Let teammates use it from another PC on the same network
 
-The server already listens on:
+To allow LAN connections, set `BD_HOST=0.0.0.0` and a private `BD_REGISTRATION_CODE` in `.env`, then restart the server. By default it listens only on the host PC.
 
-```text
-0.0.0.0:8765
-```
-
-That means another device can connect to the host PC if Windows Firewall allows the port.
+Another device can connect if Windows Firewall allows the port.
 
 ### 1. Find the host PC IPv4 address
 
@@ -208,7 +221,7 @@ Look for an address similar to:
 Open **PowerShell as Administrator** on the host PC:
 
 ```powershell
-New-NetFirewallRule -DisplayName "RSG Dashboard 8765" -Direction Inbound -Protocol TCP -LocalPort 8765 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "BD Dashboard 8765" -Direction Inbound -Protocol TCP -LocalPort 8765 -Action Allow -Profile Private
 ```
 
 Use this on a trusted **Private** network, not an untrusted public Wi-Fi network.
@@ -226,7 +239,7 @@ Replace `192.168.1.50` with the actual IPv4 address of the computer running the 
 Every teammate registers/logs in through the same server, so everyone sees the same balance history stored in:
 
 ```text
-data/rsg_dashboard.db
+data/bd_dashboard.db
 ```
 
 ## Access from outside your home/office network
@@ -242,7 +255,7 @@ For remote access, use one of these approaches instead:
 If you later run the dashboard behind HTTPS, set:
 
 ```text
-RSG_COOKIE_SECURE=true
+BD_COOKIE_SECURE=true
 ```
 
 ## Where to edit things later
@@ -300,20 +313,28 @@ Then include the router from:
 backend/app/main.py
 ```
 
-### Change API providers or initial Sep 18–25 history
+### Change the API provider catalog
 
 ```text
 backend/app/services/seed_service.py
 ```
 
-The seed only runs when the history table is empty. Once your database exists, edit values through the dashboard instead of editing the seed file.
+The catalog is added on startup when missing. The app does not seed sample balance history. Existing history remains in your database.
 
 ## Database backup
 
 Stop the dashboard and copy this file somewhere safe:
 
 ```text
-data/rsg_dashboard.db
+data/bd_dashboard.db
 ```
 
 That single file contains users, sessions, API providers, and balance history.
+
+## Run the integrity tests
+
+From the project folder, run:
+
+```bash
+python -m unittest discover -s tests -v
+```
